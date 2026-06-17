@@ -1,7 +1,7 @@
 [SddmGreeterTheme]
 Name=NIRU Noir
-Description=Minimal dark noir SDDM theme with Elder Futhark hostname
-Author=Nicklas Rudolfsson / ChatGPT
+Description=Minimal dark noir SDDM theme
+Author=Nicklas Rudolfsson
 License=GPL-3.0-or-later
 Type=sddm-theme
 Version=1.5.0
@@ -9,3 +9,4 @@ MainScript=Main.qml
 ConfigFile=theme.conf
 Theme-Id=niru-noir
 Theme-API=2.0
+QtVersion=6
