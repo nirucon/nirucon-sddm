@@ -1,0 +1,1 @@
+# nirucon-sddm
