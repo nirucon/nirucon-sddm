@@ -13,7 +13,7 @@ if [[ "${EUID}" -ne 0 ]]; then
 fi
 
 HOST="$(hostname -s 2>/dev/null || hostname)"
-HOST="${HOST:-studio}"
+HOST="${HOST:-localhost}"
 
 USER_DEFAULT="${SUDO_USER:-}"
 [[ "${USER_DEFAULT}" == "root" ]] && USER_DEFAULT=""
@@ -48,14 +48,9 @@ rm -rf "${DEST_DIR}"
 install -d "${DEST_DIR}"
 cp -a "${SRC_DIR}/." "${DEST_DIR}/"
 
-cat > "${DEST_DIR}/HostInfo.qml" <<EOF
-pragma Singleton
-import QtQuick 2.15
-QtObject {
-    property string hostname: "${HOST}"
-    property string runes: "${RUNES}"
-}
-EOF
+# Hostname/runes are intentionally not written into HostInfo.qml anymore.
+# Main.qml reads the live hostname from SDDM at greeter runtime, so the
+# same installed theme follows host renames and cannot display stale names.
 
 cat > "${DEST_DIR}/UserDefaults.qml" <<EOF
 pragma Singleton
@@ -82,8 +77,7 @@ EOF
 echo
 echo "Installed."
 echo
-echo "Hostname: ${HOST}"
-echo "Runes:    ${RUNES}"
+echo "Hostname is read live by SDDM at greeter runtime."
 echo
 echo "Test:"
 echo "  sddm-greeter-qt6 --test-mode --theme ${DEST_DIR}"

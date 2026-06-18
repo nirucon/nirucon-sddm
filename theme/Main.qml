@@ -18,6 +18,63 @@ Rectangle {
 
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
 
+    property string systemHostname: {
+        var h = ""
+        try {
+            h = String(sddm.hostName)
+        } catch (e) {
+            h = ""
+        }
+        if (h.length === 0 || h === "undefined" || h === "null") {
+            h = "localhost"
+        }
+        h
+    }
+
+    function toRunes(input) {
+        var out = ""
+        var value = String(input).toLowerCase()
+        for (var i = 0; i < value.length; i++) {
+            var ch = value.charAt(i)
+            switch (ch) {
+            case "a": out += "ᚨ"; break
+            case "b": out += "ᛒ"; break
+            case "c": out += "ᚲ"; break
+            case "d": out += "ᛞ"; break
+            case "e": out += "ᛖ"; break
+            case "f": out += "ᚠ"; break
+            case "g": out += "ᚷ"; break
+            case "h": out += "ᚺ"; break
+            case "i": out += "ᛁ"; break
+            case "j": out += "ᛃ"; break
+            case "k": out += "ᚲ"; break
+            case "l": out += "ᛚ"; break
+            case "m": out += "ᛗ"; break
+            case "n": out += "ᚾ"; break
+            case "o": out += "ᛟ"; break
+            case "p": out += "ᛈ"; break
+            case "q": out += "ᚲ"; break
+            case "r": out += "ᚱ"; break
+            case "s": out += "ᛊ"; break
+            case "t": out += "ᛏ"; break
+            case "u": out += "ᚢ"; break
+            case "v": out += "ᚹ"; break
+            case "w": out += "ᚹ"; break
+            case "x": out += "ᚲᛊ"; break
+            case "y": out += "ᛃ"; break
+            case "z": out += "ᛉ"; break
+            case "-":
+            case "_":
+            case ".":
+                out += " "
+                break
+            default:
+                out += ch
+            }
+        }
+        return out
+    }
+
     function clampSession() {
         if (sessionModel.count <= 0) {
             sessionIndex = 0
@@ -90,7 +147,7 @@ Rectangle {
         // because most systems already render Unicode runes cleanly.
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: HostInfo.runes
+            text: root.toRunes(root.systemHostname)
             color: root.fg
             opacity: 0.96
             font.pixelSize: Math.max(42, root.height * 0.064)
@@ -100,7 +157,7 @@ Rectangle {
 
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            text: HostInfo.hostname.toUpperCase()
+            text: root.systemHostname.toUpperCase()
             color: root.muted
             opacity: 0.88
             font.pixelSize: 15
@@ -146,6 +203,9 @@ Rectangle {
                 font.pixelSize: 15
                 text: UserDefaults.username
                 clip: true
+                activeFocusOnTab: true
+                KeyNavigation.tab: passInput
+                KeyNavigation.backtab: passInput
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
@@ -180,6 +240,9 @@ Rectangle {
                 echoMode: TextInput.Password
                 passwordCharacter: "●"
                 clip: true
+                activeFocusOnTab: true
+                KeyNavigation.tab: userInput
+                KeyNavigation.backtab: userInput
 
                 Text {
                     anchors.verticalCenter: parent.verticalCenter
