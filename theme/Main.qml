@@ -15,20 +15,53 @@ Rectangle {
     property color inputBg: "#0f0f0f"
     property color inputBorder: "#383838"
     property color focusBorder: "#9a9a9a"
+    property color warn: "#b85c5c"
 
     property int sessionIndex: sessionModel.lastIndex >= 0 ? sessionModel.lastIndex : 0
 
-    property string systemHostname: {
+    function cleanHostname(value) {
         var h = ""
         try {
-            h = String(sddm.hostName)
+            h = String(value)
         } catch (e) {
             h = ""
         }
+        h = h.replace(/^\s+|\s+$/g, "")
         if (h.length === 0 || h === "undefined" || h === "null") {
-            h = "localhost"
+            return ""
         }
-        h
+        return h
+    }
+
+    function readHostnameFile() {
+        var h = ""
+        try {
+            var xhr = new XMLHttpRequest()
+            xhr.open("GET", "file:///etc/hostname", false)
+            xhr.send()
+            if (xhr.status === 0 || xhr.status === 200) {
+                h = cleanHostname(xhr.responseText.split("\n")[0])
+            }
+        } catch (e) {
+            h = ""
+        }
+        return h
+    }
+
+    property string etcHostname: readHostnameFile()
+    property string sddmHostname: cleanHostname(sddm.hostName)
+    property string installedHostname: cleanHostname(HostInfo.hostname)
+
+    // Cross-distro hostname handling:
+    // 1. /etc/hostname works reliably on Debian, Void, Arch and CachyOS.
+    // 2. HostInfo.hostname is written by install.sh as an offline fallback.
+    // 3. sddm.hostName is kept as a final runtime fallback, but some SDDM builds return localhost.
+    property string systemHostname: {
+        if (etcHostname.length > 0) return etcHostname
+        if (installedHostname.length > 0) return installedHostname
+        if (sddmHostname.length > 0 && sddmHostname !== "localhost") return sddmHostname
+        if (sddmHostname.length > 0) return sddmHostname
+        return "unknown"
     }
 
     function toRunes(input) {
@@ -94,9 +127,35 @@ Rectangle {
         clampSession()
     }
 
+    function setInitialFocus() {
+        userInput.forceActiveFocus()
+        if (userInput.text.length > 0) {
+            userInput.selectAll()
+        }
+    }
+
     function doLogin() {
         errorText.text = ""
+
+        if (userInput.text.length === 0) {
+            errorText.text = "enter username"
+            userInput.forceActiveFocus()
+            return
+        }
+
+        if (passInput.text.length === 0) {
+            passInput.forceActiveFocus()
+            return
+        }
+
         sddm.login(userInput.text, passInput.text, sessionIndex)
+    }
+
+    Timer {
+        interval: 0
+        running: true
+        repeat: false
+        onTriggered: root.setInitialFocus()
     }
 
     Connections {
@@ -110,6 +169,15 @@ Rectangle {
             errorText.text = ""
         }
     }
+
+    Keys.onEscapePressed: {
+        passInput.text = ""
+        errorText.text = ""
+        setInitialFocus()
+    }
+
+    Keys.onLeftPressed: root.prevSession()
+    Keys.onRightPressed: root.nextSession()
 
     Canvas {
         anchors.fill: parent
@@ -215,8 +283,14 @@ Rectangle {
                     visible: userInput.text.length === 0 && !userInput.activeFocus
                 }
 
-                Keys.onReturnPressed: passInput.forceActiveFocus()
-                Keys.onEnterPressed: passInput.forceActiveFocus()
+                Keys.onReturnPressed: {
+                    passInput.forceActiveFocus()
+                    passInput.selectAll()
+                }
+                Keys.onEnterPressed: {
+                    passInput.forceActiveFocus()
+                    passInput.selectAll()
+                }
             }
         }
 
@@ -254,7 +328,6 @@ Rectangle {
 
                 Keys.onReturnPressed: root.doLogin()
                 Keys.onEnterPressed: root.doLogin()
-                Component.onCompleted: forceActiveFocus()
             }
         }
 
@@ -335,6 +408,7 @@ Rectangle {
             height: 38
             anchors.horizontalCenter: parent.horizontalCenter
             color: loginArea.pressed ? "#2a2a2a" : "#151515"
+            opacity: (userInput.text.length > 0 && passInput.text.length > 0) ? 1.0 : 0.72
             border.color: loginArea.containsMouse ? root.focusBorder : root.inputBorder
             border.width: 1
 
@@ -359,7 +433,7 @@ Rectangle {
             id: errorText
             width: parent.width
             text: ""
-            color: "#b85c5c"
+            color: root.warn
             font.pixelSize: 12
             horizontalAlignment: Text.AlignHCenter
         }
